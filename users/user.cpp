@@ -1,8 +1,7 @@
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkReply>
-
-#include <QDebug>
 
 #include "memsourceurlgetter.hpp"
 #include "user.hpp"
@@ -26,25 +25,12 @@ User::User(QString sUser, QString sPassword, QObject * parent):
     loginData["userName"] = sUser;
 
     PostRequest(MemsourceUrlGetter::loginUrl(), loginData, false);
-
-    m_vProjecNames_Cache.append("Test1");
-    m_vProjecNames_Cache.append("Test2");
-
-    m_vSourceLanguage_Cache.append("En");
-    m_vSourceLanguage_Cache.append("Cz");
-
-    m_vTargetLanguage_Cache.append(QStringList({"De, Fr"}));
-    m_vTargetLanguage_Cache.append(QStringList({"De, Fr, It, Han"}));
-
-    m_vCreationTime_Cache.append(QDateTime::currentDateTime().addDays(2));
-    m_vCreationTime_Cache.append(QDateTime::currentDateTime().addDays(1));
 }
 
 User::~User()
 {
     if (TokenValid())
     {
-        qDebug() << "destroying";
         if (m_timer.isActive())
         {
             m_timer.stop();
@@ -56,36 +42,47 @@ User::~User()
 
 QString User::GetSourceLanguage(int iProjectIndex) const
 {
-    if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vSourceLanguage_Cache.size()))
-        return m_vSourceLanguage_Cache[iProjectIndex];
+    if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vProjects_cache.size()))
+        return m_vProjects_cache[iProjectIndex].m_SourceLanguage;
     return QString();
 }
 
-QStringList User::GetTargetLanguages(int iProjectIndex) const
+QString User::GetTargetLanguages(int iProjectIndex) const
 {
-    if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vTargetLanguage_Cache.size()))
-        return m_vTargetLanguage_Cache[iProjectIndex];
-    return QStringList();
+    QString sRet;
+    if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vProjects_cache.size()))
+        for (auto itLang : m_vProjects_cache[iProjectIndex].m_TargetLanguage)
+        {
+            if (sRet.length() > 0)
+                sRet += ", ";
+            sRet += itLang;
+        }
+    return sRet;
 }
 
 QDateTime User::GetCreationTime(int iProjectIndex) const
 {
-    if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vCreationTime_Cache.size()))
-        return m_vCreationTime_Cache[iProjectIndex];
+    if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vProjects_cache.size()))
+        return m_vProjects_cache[iProjectIndex].m_CreationTime;
     return QDateTime();
+}
+
+void User::GetRequest(const QUrl &url)
+{
+    QNetworkRequest request = QNetworkRequest(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    m_manager.get(request);
 }
 
 void User::UpdateModel()
 {
-    QJsonObject updateData;
-    updateData["clientId"] = m_id;
-
-    PostRequest(MemsourceUrlGetter::listProjectsUrl(), updateData, false);
+    GetRequest(MemsourceUrlGetter::listProjectsUrl(m_sToken));
 }
 
 int User::rowCount(const QModelIndex &/*parent*/) const
 {
-    return static_cast<int>(m_vProjecNames_Cache.size());
+    return static_cast<int>(m_vProjects_cache.size());
 }
 
 int User::columnCount(const QModelIndex &/*parent*/) const
@@ -182,10 +179,22 @@ QString User::UserName() const
     return m_sUser;
 }
 
+QDateTime User::parseDateTimeString(QString sDateTime)
+{
+    QStringRef year(&sDateTime, 0,4);
+    QStringRef month(&sDateTime, 5,2);
+    QStringRef day(&sDateTime, 8,2);
+    QStringRef hour(&sDateTime, 11,2);
+    QStringRef minute(&sDateTime, 14,2);
+    QStringRef second(&sDateTime, 17,2);
+    return QDateTime(QDate(year.toInt(), month.toInt(), day.toInt()),
+                     QTime(hour.toInt(), minute.toInt(), second.toInt()),Qt::UTC);
+}
+
 QString User::GetProjectName(int iProjectIndex) const
 {
-    if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vProjecNames_Cache.size()))
-        return m_vProjecNames_Cache[iProjectIndex];
+    if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vProjects_cache.size()))
+        return m_vProjects_cache[iProjectIndex].m_ProjecName;
     return QString();
 }
 
@@ -196,8 +205,9 @@ void User::ReplyFinished(QNetworkReply *reply)
         if (reply->request().url() == MemsourceUrlGetter::loginUrl())
         {
             LoginReply(reply);
+            UpdateModel();
         }
-        if (reply->request().url() ==MemsourceUrlGetter::listProjectsUrl())
+        if (reply->request().url() == MemsourceUrlGetter::listProjectsUrl(m_sToken))
         {
             UpdateReply(reply);
         }
@@ -233,23 +243,14 @@ void User::LoginReply(QNetworkReply *reply)
     if (reply)
     {
         QJsonDocument document = QJsonDocument::fromJson(reply->readAll());
-        qDebug() << document;
         m_id = document["id"].toInt();
         m_uid = document["uid"].toString();
         m_sToken = document["token"].toString();
         QString sTokenExpires = document["expires"].toString();
-        QStringRef year(&sTokenExpires, 0,4);
-        QStringRef month(&sTokenExpires, 5,2);
-        QStringRef day(&sTokenExpires, 8,2);
-        QStringRef hour(&sTokenExpires, 11,2);
-        QStringRef minute(&sTokenExpires, 14,2);
-        QStringRef second(&sTokenExpires, 17,2);
-        m_TokenValidity = QDateTime(QDate(year.toInt(), month.toInt(), day.toInt()),
-                                    QTime(hour.toInt(), minute.toInt(), second.toInt()),Qt::UTC);
+        m_TokenValidity = parseDateTimeString(sTokenExpires);
 
         if (!m_timer.isActive())
         {
-            qDebug() << "timer start";
             m_timer.start();
         }
     }
@@ -259,8 +260,40 @@ void User::UpdateReply(QNetworkReply *reply)
 {
     if (reply)
     {
+        beginResetModel();
         QJsonDocument document = QJsonDocument::fromJson(reply->readAll());
-        qDebug() << "update received";
-        qDebug() << document;
+        QJsonArray jsonArray = document["content"].toArray();
+        for (auto itJson : jsonArray)
+        {
+            QJsonObject json = itJson.toObject();
+            St_project parsedProject;
+            parsedProject.m_ProjecName = json["name"].toString();
+            parsedProject.m_vUId = json["uid"].toString();
+            parsedProject.m_SourceLanguage = json["sourceLang"].toString();
+            QJsonArray targetLanguagesArray = json["targetLangs"].toArray();
+            for (auto itLang : targetLanguagesArray)
+            {
+                parsedProject.m_TargetLanguage.append(itLang.toString());
+            }
+            parsedProject.m_CreationTime = parseDateTimeString(json["dateCreated"].toString());
+
+            auto itReplace = std::find_if(m_vProjects_cache.begin(),
+                                          m_vProjects_cache.end(),
+                                          [parsedProject](St_project & itProject)
+                                          {
+                                             return parsedProject.m_vUId == itProject.m_vUId;
+                                          }
+                                          );
+            if (itReplace != m_vProjects_cache.end())
+            {
+                int iProjectIndex = static_cast<int>(itReplace - m_vProjects_cache.begin());
+                m_vProjects_cache[iProjectIndex] = parsedProject;
+            }
+            else
+            {
+                m_vProjects_cache.append(parsedProject);
+            }
+        }
+        endResetModel();
     }
 }

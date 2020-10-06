@@ -11,6 +11,6 @@ public:
 
     static QUrl loginUrl();
     static QUrl logoutUrl();
-    static QUrl listProjectsUrl();
+    static QUrl listProjectsUrl(QString token);
 };
 #endif // MEMSOURCEURLGETTER_HPP

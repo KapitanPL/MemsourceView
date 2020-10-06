@@ -28,7 +28,9 @@ QUrl MemsourceUrlGetter::logoutUrl()
     return QUrl(QString(BASE) + QString(LOGOUT));
 }
 
-QUrl MemsourceUrlGetter::listProjectsUrl()
+QUrl MemsourceUrlGetter::listProjectsUrl(QString token)
 {
-     return QUrl(QString(BASE) + QString(LIST_PROJECTS));
+     QUrl url = QUrl(QString(BASE) + QString(LIST_PROJECTS));
+     url.setQuery(QString("token=%1").arg(token));
+     return url;
 }

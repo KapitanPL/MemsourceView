@@ -10,6 +10,15 @@
 #include <memory>
 #include <mutex>
 
+struct St_project
+{
+    QString m_ProjecName;
+    QString m_SourceLanguage;
+    QStringList m_TargetLanguage;
+    QDateTime m_CreationTime;
+    QString m_vUId;
+};
+
 class User : public QAbstractTableModel
 {
 public:
@@ -25,6 +34,8 @@ public:
     //Other
     QString     UserName() const;
 
+    static QDateTime parseDateTimeString(QString sDateTime);
+
     enum eColumn
     {
         eName       = 0,
@@ -39,9 +50,10 @@ public slots:
 private:
     QString     GetProjectName(int iProjectIndex) const;
     QString     GetSourceLanguage(int iProjectIndex) const;
-    QStringList GetTargetLanguages(int iProjectIndex) const;
+    QString GetTargetLanguages(int iProjectIndex) const;
     QDateTime   GetCreationTime(int iProjectIndex) const;
 
+    virtual void GetRequest(const QUrl & url);
     virtual void LoginReply(QNetworkReply *reply);
     virtual void PostRequest(const QUrl & url, QJsonObject & jsonObject, bool bIncludeToken = true);
     virtual void ReplyFinished(QNetworkReply *reply);
@@ -58,10 +70,7 @@ private:
     int64_t m_id = 0;
     QString m_uid = "";
 
-    QVector<QString> m_vProjecNames_Cache;
-    QVector<QString> m_vSourceLanguage_Cache;
-    QVector<QStringList> m_vTargetLanguage_Cache;
-    QVector<QDateTime> m_vCreationTime_Cache;
+    QVector<St_project> m_vProjects_cache;
 };
 
 #endif // User_HPP

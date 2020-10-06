@@ -13,8 +13,6 @@
 #include "mainwindow.hpp"
 #include "users/user.hpp" //backend
 
-#include <QDebug>
-
 MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent)
 {
@@ -109,6 +107,8 @@ void MainWindow::addUserWidget()
             centralLayout->addWidget(userWidget);
             centralLayout->addWidget(addNewUserWidget);
         }
+        userEdit->clear();
+        userPassword->clear();
     }
 }
 
