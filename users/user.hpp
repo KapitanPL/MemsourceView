@@ -21,8 +21,9 @@ struct St_project
 
 class User : public QAbstractTableModel
 {
+    Q_OBJECT
 public:
-    User(QString sUser, QString sPassword, QObject * parent = nullptr);
+    User(const QString & sUser, const QString & sPassword, const QString & server, QObject * parent = nullptr);
     virtual ~User() override;
 
     //QAbstractItemModel
@@ -30,6 +31,11 @@ public:
     virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+
+
+
+    bool operator==(const User & other);
+    bool operator!=(const User & other);
 
     //Other
     QString     UserName() const;
@@ -44,8 +50,13 @@ public:
         eTime       = 3
     };
 
+signals:
+    void userLoggedOut();
+    void userLoggedIn();
+
 public slots:
     virtual void UpdateModel();
+    virtual void Logout();
 
 private:
     QString     GetProjectName(int iProjectIndex) const;
@@ -53,24 +64,23 @@ private:
     QString GetTargetLanguages(int iProjectIndex) const;
     QDateTime   GetCreationTime(int iProjectIndex) const;
 
-    virtual void GetRequest(const QUrl & url);
     virtual void LoginReply(QNetworkReply *reply);
-    virtual void PostRequest(const QUrl & url, QJsonObject & jsonObject, bool bIncludeToken = true);
-    virtual void ReplyFinished(QNetworkReply *reply);
     virtual void UpdateReply(QNetworkReply *reply);
 
     virtual bool TokenValid();
 
-    static QNetworkAccessManager m_manager;
     QTimer m_timer;
 
     QString m_sUser = "";
+    QString m_sServer = QString();
     QString m_sToken = "";
     QDateTime m_TokenValidity;
     int64_t m_id = 0;
     QString m_uid = "";
 
     QVector<St_project> m_vProjects_cache;
+
+    QSharedPointer<QNetworkAccessManager> m_manager = nullptr;
 };
 
 #endif // User_HPP

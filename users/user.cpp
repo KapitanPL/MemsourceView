@@ -3,41 +3,38 @@
 #include <QJsonObject>
 #include <QNetworkReply>
 
-#include "memsourceurlgetter.hpp"
+#include "./../mainwindow.hpp"
+
 #include "user.hpp"
+
+#include "Requests/logincall.h"
+#include "Requests/logoutcall.h"
+#include "Requests/listprojectscall.h"
+
 
 static constexpr int COLUMN_COUNT = 4;
 
-QNetworkAccessManager User::m_manager;
-
-User::User(QString sUser, QString sPassword, QObject * parent):
-    QAbstractTableModel(parent)
+User::User(const QString & sUser, const QString & sPassword, const QString & server, QObject * parent):
+    QAbstractTableModel()
 {
     m_sUser = sUser;
-    m_manager.connect(&m_manager, &QNetworkAccessManager::finished,
-                      this, &User::ReplyFinished);
+    m_sServer = server;
 
     m_timer.setInterval(30000);
     m_timer.connect(&m_timer, &QTimer::timeout, this, &User::UpdateModel);
 
-    QJsonObject loginData;
-    loginData["password"] = sPassword;
-    loginData["userName"] = sUser;
+    MainWindow * main = qobject_cast<MainWindow*>(parent);
+    if (main)
+        m_manager = main->manager;
 
-    PostRequest(MemsourceUrlGetter::loginUrl(), loginData, false);
+    LoginCall * loginCall = new LoginCall(m_sUser, sPassword, m_sServer, m_manager);
+    loginCall->connect(loginCall, &LoginCall::callSuccess, this, &User::LoginReply);
+    loginCall->execute();
 }
 
 User::~User()
 {
-    if (TokenValid())
-    {
-        if (m_timer.isActive())
-        {
-            m_timer.stop();
-        }
-        QJsonObject json;
-        PostRequest(MemsourceUrlGetter::logoutUrl(),json);
-    }
+    Logout();
 }
 
 QString User::GetSourceLanguage(int iProjectIndex) const
@@ -51,12 +48,12 @@ QString User::GetTargetLanguages(int iProjectIndex) const
 {
     QString sRet;
     if (iProjectIndex >= 0 && iProjectIndex < static_cast<int>(m_vProjects_cache.size()))
-        for (auto itLang : m_vProjects_cache[iProjectIndex].m_TargetLanguage)
+        for (auto & itLang : m_vProjects_cache[iProjectIndex].m_TargetLanguage)
         {
             if (sRet.length() > 0)
                 sRet += ", ";
             sRet += itLang;
-        }
+        };
     return sRet;
 }
 
@@ -67,17 +64,28 @@ QDateTime User::GetCreationTime(int iProjectIndex) const
     return QDateTime();
 }
 
-void User::GetRequest(const QUrl &url)
-{
-    QNetworkRequest request = QNetworkRequest(url);
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-    m_manager.get(request);
-}
 
 void User::UpdateModel()
 {
-    GetRequest(MemsourceUrlGetter::listProjectsUrl(m_sToken));
+    /*Q_ASSERT(TokenValid());
+    ListProjectsCall listProjectsCall(m_sServer, m_sToken, m_manager);
+    listProjectsCall.deleteLater();
+    listProjectsCall.connect(&listProjectsCall, &ListProjectsCall::callSuccess, this, &User::UpdateReply);
+    listProjectsCall.execute();*/
+}
+
+void User::Logout()
+{
+    if (TokenValid())
+    {
+        if (m_timer.isActive())
+        {
+            m_timer.stop();
+        }
+        LogoutCall logoutCall(m_sServer, m_manager);
+        logoutCall.execute();
+    }
+    emit userLoggedOut();
 }
 
 int User::rowCount(const QModelIndex &/*parent*/) const
@@ -174,6 +182,16 @@ QVariant User::headerData(int section, Qt::Orientation orientation, int role) co
     return ret;
 }
 
+bool User::operator==(const User &other)
+{
+    return (m_sServer == other.m_sServer && m_sUser == other.m_sServer);
+}
+
+bool User::operator!=(const User &other)
+{
+    return (*this)==other;
+}
+
 QString User::UserName() const
 {
     return m_sUser;
@@ -198,44 +216,10 @@ QString User::GetProjectName(int iProjectIndex) const
     return QString();
 }
 
-void User::ReplyFinished(QNetworkReply *reply)
-{
-    if (reply)
-    {
-        if (reply->request().url() == MemsourceUrlGetter::loginUrl())
-        {
-            LoginReply(reply);
-            UpdateModel();
-        }
-        if (reply->request().url() == MemsourceUrlGetter::listProjectsUrl(m_sToken))
-        {
-            UpdateReply(reply);
-        }
-        reply->deleteLater();
-    }
-}
-
 bool User::TokenValid()
 {
     QDateTime now = QDateTime::currentDateTimeUtc();
     return (m_TokenValidity > now);
-}
-
-void User::PostRequest(const QUrl & url, QJsonObject & jsonObject, bool bIncludeToken)
-{
-    QNetworkRequest request = QNetworkRequest(url);
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-    if (bIncludeToken)
-    {
-        jsonObject["token"] = m_sToken;
-    }
-    QJsonDocument jsonDoc(jsonObject);
-    QByteArray jsonData= jsonDoc.toJson();
-    request.setHeader(QNetworkRequest::ContentLengthHeader,
-                      QByteArray::number(jsonData.size()));
-
-    m_manager.post(request, jsonData);
 }
 
 void User::LoginReply(QNetworkReply *reply)
@@ -253,6 +237,8 @@ void User::LoginReply(QNetworkReply *reply)
         {
             m_timer.start();
         }
+        UpdateModel();
+        emit userLoggedIn();
     }
 }
 

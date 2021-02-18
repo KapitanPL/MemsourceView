@@ -1,4 +1,4 @@
-QT       += core gui network
+QT       += core gui network quickwidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -18,13 +18,29 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    users/memsourceurlgetter.cpp \
+    users/Requests/base/getcall.cpp \
+    users/Requests/base/memsourceurlgetter.cpp \
+    users/Requests/base/networkcall.cpp \
+    users/Requests/base/postcall.cpp \
+    users/Requests/logincall.cpp \
+    users/Requests/logoutcall.cpp \
+    users/Requests/listprojectscall.cpp \
     users/user.cpp \
+    widgets/addnewuserwidget.cpp \
+    widgets/userwidget.cpp
 
 HEADERS += \
     mainwindow.hpp \
-    users/memsourceurlgetter.hpp \
+    users/Requests/base/getcall.h \
+    users/Requests/base/memsourceurlgetter.hpp \
+    users/Requests/base/networkcall.h \
+    users/Requests/base/postcall.h \
+    users/Requests/logincall.h \
+    users/Requests/logoutcall.h \
+    users/Requests/listprojectscall.h \
     users/user.hpp \
+    widgets/addnewuserwidget.h \
+    widgets/userwidget.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

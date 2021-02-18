@@ -1,20 +1,23 @@
-#include <QAction>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QLineEdit>
 #include <QMenuBar>
-#include <QPushButton>
 #include <QScrollArea>
-#include <QTableView>
-#include <QToolBar>
 #include <QVBoxLayout>
 
 #include "mainwindow.hpp"
 #include "users/user.hpp" //backend
+#include "users/Requests/base/memsourceurlgetter.hpp"
+#include "widgets/addnewuserwidget.h"
+#include "widgets/userwidget.h"
 
-MainWindow::MainWindow(QWidget *parent)
+#include <QNetworkReply>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+
+MainWindow::MainWindow(QSharedPointer<QNetworkAccessManager> manager, QWidget *parent)
     : QWidget(parent)
+    , manager(manager)
 {
     setGeometry(100,100,600,350);
     setupMainLayout();
@@ -32,83 +35,33 @@ void MainWindow::addNewUserWidget()
     QVBoxLayout * centralLayout = findChild<QVBoxLayout*>("centralLayout");
     if (centralLayout != nullptr)
     {
-        QWidget * userWidget = new QWidget();
+        AddNewUserWidget * userWidget = new AddNewUserWidget(this);
         userWidget->setObjectName("addNewUserWidget");
-        QGridLayout * userLayout = new QGridLayout();
-        userWidget->setLayout(userLayout);
+        connect(userWidget, &AddNewUserWidget::addUserClicked, this, &MainWindow::addUser);
         centralLayout->addWidget(userWidget);
-
-        userLayout->addWidget(new QLabel(tr("User")),0,0);
-        userLayout->addWidget(new QLabel(tr("Password")),1,0);
-
-        QLineEdit * userEdit = new QLineEdit();
-        userEdit->setObjectName("EditUsername");
-        userLayout->addWidget(userEdit, 0,1);
-
-        QLineEdit * passwordEdit = new QLineEdit();
-        passwordEdit->setEchoMode(QLineEdit::Password);
-        passwordEdit->setObjectName("EditPassword");
-        userLayout->addWidget(passwordEdit, 1, 1);
-
-        QPushButton * pushAddUser = new QPushButton(tr("Add"));
-        pushAddUser->connect(pushAddUser, &QPushButton::clicked, this, &MainWindow::addUserWidget);
-        userLayout->addWidget(pushAddUser,0,2);
-
-        userWidget->setFixedHeight(userWidget->sizeHint().height());
+        userWidget->reset();
     }
 }
 
-void MainWindow::addUserWidget()
+void MainWindow::addUser()
 {
-    QLineEdit * userEdit = findChild<QLineEdit*>("EditUsername");
-    QLineEdit * userPassword = findChild<QLineEdit*>("EditPassword");
-    if (userEdit != nullptr && userPassword != nullptr)
+    AddNewUserWidget * userWidget = findChild<AddNewUserWidget*>("addNewUserWidget");
+    if (userWidget)
     {
-        QString sUserName = userEdit->text();
+        QSharedPointer<User> pUser = QSharedPointer<User>(new User(userWidget->getUserName(),
+                                                           userWidget->getPassword(),
+                                                           userWidget->getServer(),
+                                                                   this));
         auto itUser = std::find_if(m_vUsers.begin(), m_vUsers.end(),
-                                   [sUserName](QSharedPointer<User> const &itUser){return itUser->UserName() == sUserName;});
+                                   [pUser](QSharedPointer<User> const &itUser){return (*itUser) == (*pUser); });
 
-        if (itUser == m_vUsers.end())
+        if (itUser != m_vUsers.end())
         {
-            m_vUsers.append(QSharedPointer<User>(new User(sUserName, userPassword->text())));
-            itUser = &m_vUsers.back();
+            return;
         }
-
-        QWidget * userTableExist = findChild<QWidget*>(QString("UserTabel_%1").arg(sUserName));
-        QVBoxLayout * centralLayout = findChild<QVBoxLayout*>("centralLayout");
-        if (centralLayout != nullptr && userTableExist == nullptr)
-        {
-            QWidget * userWidget = new QWidget();
-            userWidget->setObjectName(QString("UserTabel_%1").arg(sUserName));
-            QVBoxLayout * userLayout = new QVBoxLayout(userWidget);
-
-            QWidget * userHead = new QWidget();
-            QHBoxLayout * headLayout = new QHBoxLayout(userHead);
-            headLayout->addWidget(new QLabel(sUserName));
-            headLayout->addStretch(1);
-            userLayout->addWidget(userHead);
-
-            QToolBar * userToolBar = new QToolBar();
-            userToolBar->setObjectName(QString("User_%1_toolbar"));
-            QAction * actionUpdate = new QAction(tr("Update"));
-            actionUpdate->connect(actionUpdate, &QAction::triggered, itUser->data(), &User::UpdateModel);
-            userToolBar->addAction(actionUpdate);
-            QAction * actionLogout = new QAction(tr("Logout"));
-            actionLogout->connect(actionLogout, &QAction::triggered, this, [sUserName, this](){this->logoutUser(sUserName);});
-            userToolBar->addAction(actionLogout);
-            headLayout->addWidget(userToolBar);
-
-            QTableView * userTable = new QTableView();
-            userTable->setModel(itUser->data());
-            userLayout->addWidget(userTable);
-
-            QWidget * addNewUserWidget = findChild<QWidget*>("addNewUserWidget");
-            centralLayout->removeWidget(addNewUserWidget);
-            centralLayout->addWidget(userWidget);
-            centralLayout->addWidget(addNewUserWidget);
-        }
-        userEdit->clear();
-        userPassword->clear();
+        pUser->connect(pUser.get(), &User::userLoggedOut, this, [this, pUser](){onUserLoggout(pUser);} );
+        pUser->connect(pUser.get(), &User::userLoggedIn, this, [this, pUser](){onUserLoggedIn(pUser);});
+        userWidget->reset();
     }
 }
 
@@ -173,9 +126,9 @@ void MainWindow::setupSystemTray()
     }
 }
 
-void MainWindow::logoutUser(QString sUserName)
+void MainWindow::onUserLoggout(QSharedPointer<User> pUser)
 {
-    QWidget * userTable = findChild<QWidget*>(QString("UserTabel_%1").arg(sUserName));
+    QWidget * userTable = findChild<QWidget*>(QString("UserTable_%1").arg(pUser->UserName()));
     QVBoxLayout * centralLayout = findChild<QVBoxLayout*>("centralLayout");
 
     if (centralLayout != nullptr && userTable != nullptr)
@@ -189,11 +142,33 @@ void MainWindow::logoutUser(QString sUserName)
     }
 
     auto itUser = std::find_if(m_vUsers.begin(), m_vUsers.end(),
-                               [sUserName](QSharedPointer<User> const &itUser){return itUser->UserName() == sUserName;});
+                               [pUser](QSharedPointer<User> const &itUser){return (*itUser) == (*pUser);});
 
     if (itUser != m_vUsers.end())
     {
         m_vUsers.remove(static_cast<int>(itUser - m_vUsers.begin()));
     }
+
+}
+
+void MainWindow::onUserLoggedIn(QSharedPointer<User> pUser)
+{
+    m_vUsers.push_back(pUser);
+
+    QWidget * userTableExist = findChild<QWidget*>(QString("UserTable_%1").arg(pUser->UserName()));
+    Q_ASSERT(userTableExist == nullptr);
+
+    QVBoxLayout * centralLayout = findChild<QVBoxLayout*>("centralLayout");
+    if (centralLayout != nullptr)
+    {
+        UserWidget * userWidget = new UserWidget(pUser);
+        userWidget->setObjectName(QStringLiteral("UserTable_%1").arg(pUser->UserName()));
+
+        AddNewUserWidget * addNewUserWidget = findChild<AddNewUserWidget*>("addNewUserWidget");
+        centralLayout->removeWidget(addNewUserWidget);
+        centralLayout->addWidget(userWidget);
+        centralLayout->addWidget(addNewUserWidget);
+    }
+    update();
 }
 
