@@ -8,7 +8,6 @@
 #include "mainwindow.hpp"
 #include "users/user.hpp" //backend
 #include "users/Requests/base/memsourceurlgetter.hpp"
-#include "widgets/addnewuserwidget.h"
 #include "widgets/userwidget.h"
 
 #include <QNetworkReply>
@@ -48,9 +47,16 @@ void MainWindow::addUser()
     AddNewUserWidget * userWidget = findChild<AddNewUserWidget*>("addNewUserWidget");
     if (userWidget)
     {
-        QSharedPointer<User> pUser = QSharedPointer<User>(new User(userWidget->getUserName(),
-                                                           userWidget->getPassword(),
-                                                           userWidget->getServer(),
+        St_userSettings settings;
+        userWidget->fillUserSettings(settings);
+
+        if (settings.m_bRemberMe)
+            m_vUserSettings.push_back(settings);
+
+
+        QSharedPointer<User> pUser = QSharedPointer<User>(new User(settings.m_sUerName,
+                                                           settings.m_sPassword,
+                                                           settings.m_sServer,
                                                                    this));
         auto itUser = std::find_if(m_vUsers.begin(), m_vUsers.end(),
                                    [pUser](QSharedPointer<User> const &itUser){return (*itUser) == (*pUser); });
@@ -154,6 +160,12 @@ void MainWindow::onUserLoggout(QSharedPointer<User> pUser)
 void MainWindow::onUserLoggedIn(QSharedPointer<User> pUser)
 {
     m_vUsers.push_back(pUser);
+
+    auto saveUser = std::find_if(m_vUserSettings.begin(), m_vUserSettings.end(), [pUser](St_userSettings const & userSettings){return pUser->UserName() == userSettings.m_sUerName; });
+    if (saveUser != m_vUserSettings.end())
+    {
+        //TODO save user
+    }
 
     QWidget * userTableExist = findChild<QWidget*>(QString("UserTable_%1").arg(pUser->UserName()));
     Q_ASSERT(userTableExist == nullptr);

@@ -49,34 +49,24 @@ AddNewUserWidget::AddNewUserWidget(QWidget *parent) : QWidget(parent)
     userLayout->addStretch(1);
 }
 
-const QString AddNewUserWidget::getUserName()
+void AddNewUserWidget::fillUserSettings(St_userSettings &settings) const
 {
     QLineEdit * userEdit = findChild<QLineEdit*>("EditUsername");
-    if (userEdit != nullptr)
-    {
-        return userEdit->text();
-    }
-    return QString();
-}
+    QLineEdit * userPassword = findChild<QLineEdit*>("EditPassword");
+    QLineEdit * editServer = findChild<QLineEdit*>("EditServer");
+    QCheckBox * checkRemember = findChild<QCheckBox*>("rememberUserCheckBox");
 
-const QString AddNewUserWidget::getPassword()
-{
-    QLineEdit * passwordEdit = findChild<QLineEdit*>("EditPassword");
-    if (passwordEdit != nullptr)
-    {
-        return passwordEdit->text();
-    }
-    return QString();
-}
+    if (checkRemember)
+        settings.m_bRemberMe = checkRemember->isChecked();
 
-const QString AddNewUserWidget::getServer()
-{
-    QLineEdit * serverEdit = findChild<QLineEdit*>("EditServer");
-    if (serverEdit != nullptr)
-    {
-        return serverEdit->text();
-    }
-    return QString();
+    if (userEdit)
+        settings.m_sUerName = userEdit->text();
+
+    if (userPassword)
+        settings.m_sPassword = userPassword->text();
+
+    if (editServer)
+        settings.m_sServer = editServer->text();
 }
 
 void AddNewUserWidget::reset()
@@ -86,11 +76,11 @@ void AddNewUserWidget::reset()
     QLineEdit * editServer = findChild<QLineEdit*>("EditServer");
     QCheckBox * checkRemember = findChild<QCheckBox*>("rememberUserCheckBox");
     if (userEdit != nullptr)
-        userEdit->setText("stepan.svoboda@memsource.com");
+        userEdit->setText("");
     if (userPassword != nullptr)
-        userPassword->setText("Ionofiss_21");
+        userPassword->setText("");
     if (editServer != nullptr)
-        editServer->setText("https://qa.memsource.com/web");
+        editServer->setText("");
     if (checkRemember != nullptr)
         checkRemember->setChecked(true);
 }

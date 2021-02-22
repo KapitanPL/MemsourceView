@@ -4,6 +4,8 @@
 #include <QWidget>
 #include <QSharedPointer>
 
+#include "widgets/addnewuserwidget.h"
+
 class User;
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -36,5 +38,6 @@ private slots:
 
 private:
     QUserVector m_vUsers;
+    QVector<St_userSettings> m_vUserSettings;
 };
 #endif // MAINWINDOW_H

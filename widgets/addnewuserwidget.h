@@ -3,15 +3,21 @@
 
 #include <QWidget>
 
+struct St_userSettings
+{
+    QString m_sUerName = QString();
+    QString m_sPassword = QString();
+    QString m_sServer = QString();
+    bool m_bRemberMe = false;
+};
+
 class AddNewUserWidget : public QWidget
 {
     Q_OBJECT
 public:
     explicit AddNewUserWidget(QWidget *parent = nullptr);
 
-    const QString getUserName();
-    const QString getPassword();
-    const QString getServer();
+    void fillUserSettings(St_userSettings & settings) const;
 
     void reset();
 
