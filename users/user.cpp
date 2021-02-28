@@ -67,11 +67,10 @@ QDateTime User::GetCreationTime(int iProjectIndex) const
 
 void User::UpdateModel()
 {
-    /*Q_ASSERT(TokenValid());
-    ListProjectsCall listProjectsCall(m_sServer, m_sToken, m_manager);
-    listProjectsCall.deleteLater();
-    listProjectsCall.connect(&listProjectsCall, &ListProjectsCall::callSuccess, this, &User::UpdateReply);
-    listProjectsCall.execute();*/
+    Q_ASSERT(TokenValid());
+    ListProjectsCall * listProjectsCall = new ListProjectsCall(m_sServer, m_sToken, m_manager);
+    listProjectsCall->connect(listProjectsCall, &ListProjectsCall::callSuccess, this, &User::UpdateReply);
+    listProjectsCall->execute();
 }
 
 void User::Logout()
