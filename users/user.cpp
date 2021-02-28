@@ -197,6 +197,11 @@ QString User::UserName() const
     return m_sUser;
 }
 
+QString User::Server() const
+{
+    return m_sServer;
+}
+
 QDateTime User::parseDateTimeString(QString sDateTime)
 {
     QStringRef year(&sDateTime, 0,4);

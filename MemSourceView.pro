@@ -2,7 +2,7 @@ QT       += core gui network quickwidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++11
+CONFIG += c++14
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -18,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
+    simplecrypt/simplecrypt.cpp \
     users/Requests/base/getcall.cpp \
     users/Requests/base/memsourceurlgetter.cpp \
     users/Requests/base/networkcall.cpp \
@@ -31,6 +32,7 @@ SOURCES += \
 
 HEADERS += \
     mainwindow.hpp \
+    simplecrypt/simplecrypt.hpp \
     users/Requests/base/getcall.h \
     users/Requests/base/memsourceurlgetter.hpp \
     users/Requests/base/networkcall.h \

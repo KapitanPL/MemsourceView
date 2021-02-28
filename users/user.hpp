@@ -39,6 +39,7 @@ public:
 
     //Other
     QString     UserName() const;
+    QString     Server() const;
 
     static QDateTime parseDateTimeString(QString sDateTime);
 

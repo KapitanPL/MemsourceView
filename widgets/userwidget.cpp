@@ -1,5 +1,6 @@
 #include "userwidget.h"
 
+#include <QCheckBox>
 #include <QLabel>
 #include <QTableView>
 #include <QToolBar>
@@ -8,8 +9,18 @@
 UserWidget::UserWidget(QSharedPointer<User> pUser, QWidget *parent)
     : QWidget(parent)
 {
-    QVBoxLayout * userLayout = new QVBoxLayout();
-    setLayout(userLayout);
+    QVBoxLayout * mainLayout = new QVBoxLayout();
+    setLayout(mainLayout);
+
+    QCheckBox * checkVisible = new QCheckBox(QStringLiteral("%1 (%2)").arg(pUser->UserName(), pUser->Server()));
+
+    mainLayout->addWidget(checkVisible);
+    checkVisible->setChecked(true);
+    QWidget * userWidget = new QWidget();
+    mainLayout->addWidget(userWidget);
+    checkVisible->connect(checkVisible, &QCheckBox::stateChanged, this, [userWidget](int state){ userWidget->setVisible(!!state); });
+
+    QVBoxLayout * userLayout = new QVBoxLayout(userWidget);
 
     QWidget * userHead = new QWidget();
     QHBoxLayout * headLayout = new QHBoxLayout(userHead);
