@@ -32,8 +32,6 @@ public:
     virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
-
-
     bool operator==(const User & other);
     bool operator!=(const User & other);
 

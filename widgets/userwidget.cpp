@@ -41,4 +41,5 @@ UserWidget::UserWidget(QSharedPointer<User> pUser, QWidget *parent)
     QTableView * userTable = new QTableView();
     userTable->setModel(pUser.get());
     userLayout->addWidget(userTable);
+    userTable->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 }

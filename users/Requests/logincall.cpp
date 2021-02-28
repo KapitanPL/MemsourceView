@@ -4,7 +4,7 @@
 
 #include "base/memsourceurlgetter.hpp"
 
-LoginCall::LoginCall(QString sUser, QString sPassword, QString sServer, QSharedPointer<QNetworkAccessManager> manager)
+LoginCall::LoginCall(const QString &sUser, const QString &sPassword, const QString &sServer, QSharedPointer<QNetworkAccessManager> manager)
     : PostCall(MemsourceUrlGetter::loginUrl(sServer), manager)
 {
     QJsonObject loginData;
