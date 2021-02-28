@@ -10,7 +10,7 @@ class User;
 class QNetworkAccessManager;
 class QNetworkReply;
 
-typedef QVector<QSharedPointer<User>> QUserVector;
+using QUserVector = QVector<QSharedPointer<User>> ;
 
 class MainWindow : public QWidget
 {
@@ -30,7 +30,7 @@ private:
     void setupMainMenu();
     void setupSystemTray();
 
-    void logoutUser(QString sUserName);
+    void logoutUser(QString & sUserName);
 
 private slots:
     void onUserLoggout(QSharedPointer<User> pUser);

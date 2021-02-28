@@ -6,7 +6,7 @@
 class LoginCall : public PostCall
 {
 public:
-    LoginCall(QString sUser, QString sPassword, QString sServer,QSharedPointer<QNetworkAccessManager> manager = nullptr);
+    LoginCall(QString & sUser, QString & sPassword, QString sServer,QSharedPointer<QNetworkAccessManager> manager = nullptr);
 };
 
 #endif // LOGINCALL_H
