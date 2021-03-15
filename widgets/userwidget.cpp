@@ -9,6 +9,11 @@
 UserWidget::UserWidget(QSharedPointer<User> pUser, QWidget *parent)
     : QWidget(parent)
 {
+    auto pal = palette();
+    pal.setColor(QPalette::Background, Qt::green);
+    setAutoFillBackground(true);
+    setPalette(pal);
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     QVBoxLayout * mainLayout = new QVBoxLayout();
     setLayout(mainLayout);
 
@@ -17,6 +22,7 @@ UserWidget::UserWidget(QSharedPointer<User> pUser, QWidget *parent)
     mainLayout->addWidget(checkVisible);
     checkVisible->setChecked(true);
     QWidget * userWidget = new QWidget();
+    userWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     mainLayout->addWidget(userWidget);
     checkVisible->connect(checkVisible, &QCheckBox::stateChanged, this, [userWidget](int state){ userWidget->setVisible(!!state); });
 
@@ -39,7 +45,7 @@ UserWidget::UserWidget(QSharedPointer<User> pUser, QWidget *parent)
     headLayout->addWidget(userToolBar);
 
     QTableView * userTable = new QTableView();
+    userTable->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     userTable->setModel(pUser.get());
     userLayout->addWidget(userTable);
-    userTable->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 }

@@ -30,12 +30,15 @@ public:
     void updateUserCombo(QVector<QSharedPointer<User>> & vUsers);
 
     static const char * USERS;
+    static const int MAX_ELEMENT_WIDTH = 200;
 
 signals:
     void addUserClicked();
 
 private slots:
     void userSelected(int index);
+
+    void advancedChanged(int state);
 };
 
 #endif // ADDNEWUSERWIDGET_H

@@ -20,6 +20,7 @@ const char * AddNewUserWidget::USERS = "users";
 AddNewUserWidget::AddNewUserWidget(QWidget *parent) : QWidget(parent)
 {
     QVBoxLayout * mainLayout = new QVBoxLayout();
+    mainLayout->setSpacing(1);
     setLayout(mainLayout);
 
     QCheckBox * checkVisible = new QCheckBox(QStringLiteral("Add new User"));
@@ -27,6 +28,7 @@ AddNewUserWidget::AddNewUserWidget(QWidget *parent) : QWidget(parent)
     mainLayout->addWidget(checkVisible);
     QWidget * userWidget = new QWidget();
     QVBoxLayout * userLayout = new QVBoxLayout(userWidget);
+    userLayout->setSpacing(1);
     mainLayout->addWidget(userWidget);
     checkVisible->connect(checkVisible, &QCheckBox::stateChanged, this, [userWidget](int state) { userWidget->setVisible(!!state);});
 
@@ -34,24 +36,29 @@ AddNewUserWidget::AddNewUserWidget(QWidget *parent) : QWidget(parent)
 
     QComboBox * userCombo = new QComboBox();
     userCombo->setObjectName("userCombo");
+    userCombo->setMaximumWidth(AddNewUserWidget::MAX_ELEMENT_WIDTH);
     userLayout->addWidget(userCombo);
     userCombo->setVisible(false);
     connect(userCombo, qOverload<int>(&QComboBox::activated), this, &AddNewUserWidget::userSelected);
 
     QLineEdit * userEdit = new QLineEdit();
+    userEdit->setMaximumWidth(AddNewUserWidget::MAX_ELEMENT_WIDTH);
     userEdit->setObjectName("EditUsername");
     userLayout->addWidget(userEdit);
 
     userLayout->addWidget(new QLabel(tr("Password")));
     QLineEdit * passwordEdit = new QLineEdit();
+    passwordEdit->setMaximumWidth(AddNewUserWidget::MAX_ELEMENT_WIDTH);
     passwordEdit->setEchoMode(QLineEdit::Password);
     passwordEdit->setObjectName("EditPassword");
     userLayout->addWidget(passwordEdit);
 
     QWidget *advancedW = new QWidget();
+    advancedW->setObjectName(QStringLiteral("advancedOptions"));
     QVBoxLayout * advancedL = new QVBoxLayout(advancedW);
     advancedL->addWidget(new QLabel(tr("Server")));
     QLineEdit * serverEdit = new QLineEdit();
+    serverEdit->setMaximumWidth(AddNewUserWidget::MAX_ELEMENT_WIDTH);
     serverEdit->setObjectName("EditServer");
     advancedL->addWidget(serverEdit);
     QCheckBox * rememberCheck = new QCheckBox(tr("remember Me"));
@@ -60,17 +67,16 @@ AddNewUserWidget::AddNewUserWidget(QWidget *parent) : QWidget(parent)
 
     QCheckBox * advanced = new QCheckBox(tr("Advanced"));
     userLayout->addWidget(advanced);
-    advanced->connect(advanced, &QCheckBox::stateChanged, this, [advancedW](int iState){advancedW->setVisible(!!iState);});
+    advanced->connect(advanced, &QCheckBox::stateChanged, this, &AddNewUserWidget::advancedChanged);
 
     userLayout->addWidget(advancedW);
 
     QPushButton * pushAddUser = new QPushButton(tr("Add"));
+    pushAddUser->setMaximumWidth(AddNewUserWidget::MAX_ELEMENT_WIDTH);
     connect(pushAddUser, &QPushButton::clicked, this, [this](bool){emit addUserClicked();});
     userLayout->addWidget(pushAddUser);
 
-    setMaximumHeight(sizeHint().height());
     advancedW->setVisible(false);
-    userLayout->addStretch(1);
 }
 
 void AddNewUserWidget::fillUserSettings(St_userSettings &settings) const
@@ -150,6 +156,19 @@ void AddNewUserWidget::userSelected(int index)
 
     emit addUserClicked();
 
+}
+
+void AddNewUserWidget::advancedChanged(int state)
+{
+    QWidget * advancedW = findChild<QWidget*>("advancedOptions");
+    Q_ASSERT(advancedW);
+    advancedW->setVisible(!!state);
+    QSize retSize = minimumSizeHint();
+    if (state == 0)
+    {
+        retSize.setHeight(retSize.height() - advancedW->height());
+    }
+    setMaximumSize(retSize);
 }
 
 QVariant St_userSettings::toVariant()

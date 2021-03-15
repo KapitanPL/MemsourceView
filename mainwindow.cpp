@@ -147,11 +147,11 @@ void MainWindow::onUserLoggout(QSharedPointer<User> pUser)
     if (centralLayout != nullptr && userTable != nullptr)
     {
         AddNewUserWidget * addNewUserWidget = findChild<AddNewUserWidget*>("addNewUserWidget");
-        centralLayout->removeWidget(addNewUserWidget);
         centralLayout->removeWidget(userTable);
-        centralLayout->addWidget(addNewUserWidget);
         userTable->deleteLater();
         addNewUserWidget->updateUserCombo(m_vUsers);
+        if (m_vUsers.size() == 0)
+            centralLayout->addStretch(1);
         centralLayout->update();
     }
 }
@@ -186,9 +186,11 @@ void MainWindow::onUserLoggedIn(QSharedPointer<User> pUser)
 
         AddNewUserWidget * addNewUserWidget = findChild<AddNewUserWidget*>("addNewUserWidget");
         addNewUserWidget->updateUserCombo(m_vUsers);
-        //centralLayout->removeWidget(addNewUserWidget);
-        centralLayout->insertWidget(m_vUsers.size(),userWidget);
-        //centralLayout->addWidget(addNewUserWidget);
+        if (m_vUsers.size() == 1)
+        {
+            delete centralLayout->takeAt(centralLayout->count() - 1);
+        }
+        centralLayout->addWidget(userWidget);
     }
     update();
 }
